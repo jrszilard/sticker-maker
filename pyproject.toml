@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lake-sticker"
+version = "0.1.0"
+description = "Generate lake sticker SVGs from OpenStreetMap data"
+requires-python = ">=3.10"
+dependencies = [
+    "shapely>=2.0",
+    "requests>=2.28",
+]
+
+[project.optional-dependencies]
+osmnx = ["osmnx>=1.6", "geopandas>=0.14"]
+dev = ["pytest>=7.0"]
+
+[project.scripts]
+lake-sticker = "lake_sticker.cli:main"
