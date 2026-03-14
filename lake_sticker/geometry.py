@@ -2,7 +2,6 @@
 
 import json
 import math
-import os
 import time
 from pathlib import Path
 
@@ -214,25 +213,77 @@ def _fetch_via_overpass(osm_id, osm_type):
     return None
 
 
+def _merge_way_segments(segments):
+    """Merge way segments that share endpoints into closed rings.
+
+    OSM relations often split a lake boundary across multiple ways.
+    This joins ways sharing endpoints (A->B + B->C = A->C) into
+    complete closed rings.
+    """
+    from shapely.ops import linemerge
+    from shapely.geometry import LineString, MultiLineString
+
+    if not segments:
+        return []
+
+    # Convert coordinate lists to LineStrings
+    lines = []
+    for seg in segments:
+        if len(seg) >= 2:
+            lines.append(LineString(seg))
+
+    if not lines:
+        return []
+
+    # Use Shapely's linemerge to join connected segments
+    merged = linemerge(MultiLineString(lines))
+
+    # Extract closed rings from the result
+    rings = []
+    if merged.geom_type == "LineString":
+        coords = list(merged.coords)
+        if coords[0] == coords[-1] and len(coords) >= 4:
+            rings.append(coords)
+        elif len(coords) >= 4:
+            coords.append(coords[0])
+            rings.append(coords)
+    elif merged.geom_type == "MultiLineString":
+        for line in merged.geoms:
+            coords = list(line.coords)
+            if coords[0] == coords[-1] and len(coords) >= 4:
+                rings.append(coords)
+            elif len(coords) >= 4:
+                coords.append(coords[0])
+                rings.append(coords)
+
+    return rings
+
+
 def _assemble_relation_geometry(element):
-    """Assemble a Polygon/MultiPolygon from an Overpass relation element."""
-    outer_rings = []
-    inner_rings = []
+    """Assemble a Polygon/MultiPolygon from an Overpass relation element.
+
+    Handles the common OSM case where lake boundaries are split across
+    multiple way members that need to be joined end-to-end.
+    """
+    outer_segments = []
+    inner_segments = []
 
     for member in element.get("members", []):
         if member.get("type") != "way" or "geometry" not in member:
             continue
         coords = [(p["lon"], p["lat"]) for p in member["geometry"]]
-        if len(coords) < 4:
+        if len(coords) < 2:
             continue
-        if coords[0] != coords[-1]:
-            coords.append(coords[0])
 
         role = member.get("role", "outer")
         if role == "inner":
-            inner_rings.append(coords)
+            inner_segments.append(coords)
         else:
-            outer_rings.append(coords)
+            outer_segments.append(coords)
+
+    # Merge way segments into closed rings
+    outer_rings = _merge_way_segments(outer_segments)
+    inner_rings = _merge_way_segments(inner_segments)
 
     if not outer_rings:
         return None
@@ -240,6 +291,7 @@ def _assemble_relation_geometry(element):
     if len(outer_rings) == 1:
         return Polygon(outer_rings[0], inner_rings)
 
+    # Multiple outer rings: create polygons and union
     polys = []
     for ring in outer_rings:
         try:
@@ -252,6 +304,7 @@ def _assemble_relation_geometry(element):
     multi = MultiPolygon(polys)
     merged = unary_union(multi)
 
+    # Re-attach inner rings if we got a single polygon
     if merged.geom_type == "Polygon" and inner_rings:
         try:
             return Polygon(merged.exterior, inner_rings)

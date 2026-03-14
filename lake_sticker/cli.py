@@ -1,7 +1,5 @@
 """Interactive CLI for the Lake Sticker Maker."""
 
-import os
-import sys
 from pathlib import Path
 
 from lake_sticker.search import search_lakes, sanitize_filename, SearchError
