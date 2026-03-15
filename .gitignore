@@ -8,3 +8,4 @@ build/
 .venv/
 *.svg
 !generate_lake_svg.py
+user_icons/
