@@ -69,3 +69,63 @@ def test_sanitize_non_ascii():
 
 def test_sanitize_special_chars():
     assert sanitize_filename("Lake O'Brien", "MA") == "lake_o_brien_ma"
+
+
+from lake_sticker.search import search_location, parse_location_results
+
+
+def test_parse_location_results_accepts_towns():
+    raw = [
+        {
+            "place_id": 100, "osm_type": "relation", "osm_id": 55555,
+            "display_name": "Wolfeboro, Carroll County, New Hampshire, USA",
+            "class": "boundary", "type": "administrative",
+            "lat": "43.5803", "lon": "-71.2076",
+            "boundingbox": ["43.5", "43.7", "-71.3", "-71.1"],
+        },
+    ]
+    results = parse_location_results(raw)
+    assert len(results) == 1
+    r = results[0]
+    assert r["name"] == "Wolfeboro"
+    assert r["lat"] == 43.5803
+    assert r["lon"] == -71.2076
+    assert r["osm_id"] == 55555
+
+
+def test_parse_location_results_captures_lat_lon():
+    raw = [
+        {
+            "place_id": 200, "osm_type": "way", "osm_id": 66666,
+            "display_name": "King's Cross, London, England, UK",
+            "class": "place", "type": "suburb",
+            "lat": "51.5308", "lon": "-0.1238",
+            "boundingbox": ["51.52", "51.54", "-0.14", "-0.11"],
+        },
+    ]
+    results = parse_location_results(raw)
+    assert isinstance(results[0]["lat"], float)
+    assert isinstance(results[0]["lon"], float)
+
+
+def test_parse_location_results_empty():
+    assert parse_location_results([]) == []
+
+
+def test_search_location_mocked(sample_nominatim_response):
+    from unittest.mock import patch, Mock
+    enriched = []
+    for i, item in enumerate(sample_nominatim_response):
+        item_copy = dict(item)
+        item_copy["lat"] = str(43.5 + i * 0.1)
+        item_copy["lon"] = str(-71.5 + i * 0.1)
+        enriched.append(item_copy)
+
+    mock_resp = Mock()
+    mock_resp.status_code = 200
+    mock_resp.json.return_value = enriched
+    mock_resp.raise_for_status = Mock()
+
+    with patch("lake_sticker.search.requests.get", return_value=mock_resp):
+        results = search_location("Wolfeboro, NH")
+    assert len(results) == 3  # no water filtering
