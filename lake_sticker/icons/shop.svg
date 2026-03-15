@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
+  <rect x="8" y="16" width="24" height="18" rx="1" fill="var(--icon-primary, #ffd93d)" stroke="var(--icon-outline, #5a3e36)" stroke-width="1"/>
+  <rect x="6" y="12" width="28" height="6" rx="1" fill="var(--icon-secondary, #e07a5f)" stroke="var(--icon-outline, #5a3e36)" stroke-width="1"/>
+  <rect x="12" y="20" width="16" height="8" rx="1" fill="white" opacity="0.5"/>
+</svg>
