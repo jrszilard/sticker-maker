@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
+  <path d="M8,28 Q12,22 20,22 Q28,22 32,28 Z" fill="var(--icon-primary, #c0392b)" stroke="var(--icon-outline, #5a3e36)" stroke-width="1"/>
+  <line x1="20" y1="10" x2="20" y2="22" stroke="var(--icon-outline, #5a3e36)" stroke-width="1.5"/>
+  <polygon points="20,10 30,18 20,18" fill="white" stroke="var(--icon-outline, #5a3e36)" stroke-width="0.5"/>
+  <path d="M6,32 Q13,29 20,32 Q27,35 34,32" fill="none" stroke="var(--icon-primary, #7eb8cc)" stroke-width="1.5"/>
+</svg>

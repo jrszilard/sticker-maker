@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
+  <rect x="10" y="18" width="20" height="18" rx="1" fill="var(--icon-primary, #d4816b)" stroke="var(--icon-outline, #5a3e36)" stroke-width="1"/>
+  <polygon points="20,10 10,18 30,18" fill="var(--icon-primary, #d4816b)" stroke="var(--icon-outline, #5a3e36)" stroke-width="1"/>
+  <line x1="20" y1="4" x2="20" y2="10" stroke="var(--icon-outline, #5a3e36)" stroke-width="1.5"/>
+  <line x1="17" y1="7" x2="23" y2="7" stroke="var(--icon-outline, #5a3e36)" stroke-width="1.5"/>
+</svg>
