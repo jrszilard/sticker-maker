@@ -238,7 +238,15 @@ def _render_roads_layer(road_features, bounds, canvas_w, canvas_h, colors):
         if outline_w == 0:
             continue
 
-        coords = feature.get("smoothed_coords") or list(feature["geometry"].coords)
+        geom = feature["geometry"]
+        if feature.get("smoothed_coords"):
+            coords = feature["smoothed_coords"]
+        elif geom.geom_type == "Polygon":
+            coords = list(geom.exterior.coords)
+        elif hasattr(geom, "coords"):
+            coords = list(geom.coords)
+        else:
+            continue
         if len(coords) < 2:
             continue
 
@@ -253,7 +261,15 @@ def _render_roads_layer(road_features, bounds, canvas_w, canvas_h, colors):
         road_class = feature.get("road_class", "residential")
         outline_w, fill_w = ROAD_WIDTHS.get(road_class, (5, 3))
 
-        coords = feature.get("smoothed_coords") or list(feature["geometry"].coords)
+        geom = feature["geometry"]
+        if feature.get("smoothed_coords"):
+            coords = feature["smoothed_coords"]
+        elif geom.geom_type == "Polygon":
+            coords = list(geom.exterior.coords)
+        elif hasattr(geom, "coords"):
+            coords = list(geom.coords)
+        else:
+            continue
         if len(coords) < 2:
             continue
 
