@@ -22,7 +22,7 @@ The collector peels a sticker and places it on the map as they visit each town.
 
 | Decision | Choice |
 |---|---|
-| Boundary data source | US Census TIGER/Line (`tl_2023_33_cousub`) |
+| Boundary data source | US Census TIGER/Line (`tl_<latest>_33_cousub`, auto-resolved) |
 | Editing software | Unknown → generic, spec-compliant SVG with clearly-named groups |
 | Sticker output | One editable SVG file per township |
 | Sticker fit | True-scale die-cut (puzzle fit) — identical scale to base map |
@@ -60,9 +60,15 @@ Packaging:
 
 ### Data layer — `tiger.py`
 
-- Download `tl_2023_33_cousub.zip` (NH county subdivisions, FIPS 33) from the
-  Census TIGER HTTPS endpoint into the existing `.cache/` folder. Cache once,
-  reuse on subsequent runs (same pattern as `map/fetch.py`).
+- **Resolve the latest complete release year.** Start from the current calendar
+  year and probe the Census TIGER endpoint
+  (`https://www2.census.gov/geo/tiger/TIGER<year>/COUSUB/tl_<year>_33_cousub.zip`)
+  with a lightweight HTTP `HEAD`; if that year isn't published yet, step back one
+  year and retry (bounded, e.g. up to 3 years back). The first year that exists
+  is used. A `--year` CLI override forces a specific vintage and skips probing.
+- Download `tl_<year>_33_cousub.zip` (NH county subdivisions, FIPS 33) into the
+  existing `.cache/` folder. Cache once, reuse on subsequent runs (same pattern
+  as `map/fetch.py`); the cache key includes the resolved year.
 - geopandas reads the shapefile → ~259 county-subdivision polygons. Each carries
   `NAME` and `COUNTYFP`.
 - **County boundaries** are derived by dissolving subdivisions on `COUNTYFP`.
@@ -118,7 +124,7 @@ One SVG per subdivision, scaled identically to the base map:
 
 ### CLI & file naming — `cli.py`
 
-`nh-map [--out-dir DIR] [--no-stickers] [--basemap-only]`:
+`nh-map [--out-dir DIR] [--no-stickers] [--basemap-only] [--year YYYY]`:
 
 - Fetches/caches TIGER once.
 - Writes `nh_basemap.svg`.
@@ -131,7 +137,9 @@ One SVG per subdivision, scaled identically to the base map:
 
 - `test_townships_tiger.py` — classification/dissolve logic against a small
   fixture of fake subdivision records (no network); county/state derivation,
-  county-name mapping.
+  county-name mapping. Year-resolution logic tested with the HTTP `HEAD` probe
+  mocked (newest-available picked; steps back when a year is missing; `--year`
+  override skips probing).
 - `test_townships_projection.py` — the core guarantee: a geometry projected for
   the base map and for its sticker uses the **same scale**; round-trip a known
   box and assert dimensions match within tolerance.
