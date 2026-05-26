@@ -60,3 +60,80 @@ def resolve_tiger_year(current_year=None, max_lookback=3, session=None) -> int:
         f"No published TIGER cousub release found between "
         f"{current_year - max_lookback} and {current_year}."
     )
+
+
+def download_cousub(year: int, cache_dir) -> Path:
+    """Download and extract the NH cousub shapefile; return the .shp path.
+
+    Extracted into ``<cache_dir>/.cache/tiger_<year>_cousub/``. Cached: if the
+    .shp already exists it is returned without a network request.
+    """
+    cache_dir = Path(cache_dir)
+    extract_dir = cache_dir / ".cache" / f"tiger_{year}_cousub"
+    shp = extract_dir / f"tl_{year}_{NH_STATE_FIPS}_cousub.shp"
+    if shp.exists():
+        logger.debug("Cache hit: %s", shp)
+        return shp
+
+    extract_dir.mkdir(parents=True, exist_ok=True)
+    url = tiger_cousub_url(year)
+    logger.debug("Downloading %s", url)
+    resp = requests.get(url, timeout=120)
+    resp.raise_for_status()
+    with zipfile.ZipFile(io.BytesIO(resp.content)) as zf:
+        zf.extractall(extract_dir)
+    return shp
+
+
+def load_subdivisions(shapefile_path) -> list[dict]:
+    """Read the cousub shapefile into plain records (geometry in EPSG:4269)."""
+    import geopandas as gpd
+
+    gdf = gpd.read_file(shapefile_path)
+    if gdf.crs is not None and gdf.crs.to_epsg() != 4269:
+        gdf = gdf.to_crs(epsg=4269)
+
+    records = []
+    for _, row in gdf.iterrows():
+        records.append(
+            {
+                "name": row["NAME"],
+                "county_fp": row["COUNTYFP"],
+                "geometry": row["geometry"],
+            }
+        )
+    return records
+
+
+def build_feature_set(subdivisions: list[dict]) -> dict:
+    """Build townships + dissolved county + state geometries.
+
+    Returns a dict with keys ``townships``, ``counties``, ``state``.
+    Geometries are passed through unchanged (caller controls the CRS).
+    """
+    townships = []
+    by_county: dict[str, list] = {}
+    for rec in subdivisions:
+        fp = rec["county_fp"]
+        townships.append(
+            {
+                "name": rec["name"],
+                "county_fp": fp,
+                "county": NH_COUNTY_NAMES.get(fp, fp),
+                "geometry": rec["geometry"],
+            }
+        )
+        by_county.setdefault(fp, []).append(rec["geometry"])
+
+    counties = []
+    for fp in sorted(by_county):
+        counties.append(
+            {
+                "county_fp": fp,
+                "name": NH_COUNTY_NAMES.get(fp, fp),
+                "geometry": unary_union(by_county[fp]),
+            }
+        )
+
+    state = unary_union([rec["geometry"] for rec in subdivisions])
+    return {"townships": townships, "counties": counties, "state": state}
