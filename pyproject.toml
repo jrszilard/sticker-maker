@@ -20,3 +20,6 @@ dev = ["pytest>=7.0"]
 [project.scripts]
 lake-sticker = "lake_sticker.cli:main"
 nh-map = "lake_sticker.townships.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["lake_sticker*"]
