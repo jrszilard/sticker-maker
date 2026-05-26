@@ -142,6 +142,79 @@ def search_lakes(query, max_results=15):
     return candidates[:max_results]
 
 
+def parse_location_results(raw_results):
+    """Parse Nominatim results into location candidates (no water filtering).
+
+    Unlike parse_nominatim_results(), this accepts any place type.
+
+    Returns:
+        List of dicts with keys: name, location_display, osm_id, osm_type, lat, lon, bbox.
+    """
+    candidates = []
+    for r in raw_results:
+        name, location_display = _parse_display_name(r.get("display_name", ""))
+        try:
+            lat = float(r["lat"])
+            lon = float(r["lon"])
+        except (KeyError, ValueError, TypeError):
+            continue
+        candidates.append({
+            "name": name,
+            "location_display": location_display,
+            "osm_id": r["osm_id"],
+            "osm_type": r["osm_type"],
+            "lat": lat,
+            "lon": lon,
+            "bbox": r.get("boundingbox"),
+        })
+    return candidates
+
+
+def search_location(query, max_results=15):
+    """Search for any location (town, city, neighborhood, address).
+
+    Unlike search_lakes(), this does NOT filter by water features.
+
+    Args:
+        query: location name (e.g. "Wolfeboro, NH").
+        max_results: maximum results to return.
+
+    Returns:
+        List of candidate dicts (see parse_location_results).
+
+    Raises:
+        SearchError: on network errors or API failures.
+    """
+    _throttle_nominatim()
+    try:
+        resp = requests.get(
+            NOMINATIM_URL,
+            params={"q": query, "format": "json", "limit": 50, "addressdetails": 1},
+            headers={"User-Agent": USER_AGENT},
+            timeout=15,
+        )
+        if resp.status_code == 429:
+            time.sleep(5)
+            resp = requests.get(
+                NOMINATIM_URL,
+                params={"q": query, "format": "json", "limit": 50, "addressdetails": 1},
+                headers={"User-Agent": USER_AGENT},
+                timeout=15,
+            )
+        resp.raise_for_status()
+    except requests.ConnectionError:
+        raise SearchError("Could not connect to OpenStreetMap. Check your internet connection.")
+    except requests.Timeout:
+        raise SearchError("Search timed out. Try again in a moment.")
+    except requests.HTTPError as e:
+        if e.response is not None and e.response.status_code == 429:
+            raise SearchError("Rate limited by OpenStreetMap. Wait a minute and try again.")
+        raise SearchError(f"Search failed: {e}")
+
+    candidates = parse_location_results(resp.json())
+    return candidates[:max_results]
+
+
 def sanitize_filename(lake_name, location):
     """Create a filesystem-safe filename from lake name and location.
 

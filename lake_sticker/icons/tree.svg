@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
+  <ellipse cx="20" cy="15" rx="12" ry="14" fill="var(--icon-primary, #5a8f4a)" stroke="var(--icon-outline, #3d6b35)" stroke-width="1"/>
+  <rect x="18" y="27" width="4" height="8" rx="1" fill="var(--icon-outline, #7a5c3a)"/>
+</svg>

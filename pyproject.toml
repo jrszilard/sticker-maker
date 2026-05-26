@@ -14,7 +14,12 @@ dependencies = [
 
 [project.optional-dependencies]
 osmnx = ["osmnx>=1.6", "geopandas>=0.14"]
+townships = ["geopandas>=0.14", "pyproj>=3.4"]
 dev = ["pytest>=7.0"]
 
 [project.scripts]
 lake-sticker = "lake_sticker.cli:main"
+nh-map = "lake_sticker.townships.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["lake_sticker*"]

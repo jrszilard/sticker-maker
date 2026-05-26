@@ -200,9 +200,18 @@ def main():
     print("=" * 22)
 
     while True:
-        candidate = _step_search()
-        config = _step_configure(candidate)
-        _step_generate(candidate, config)
+        print("\nWhat would you like to create?")
+        print("  1) Lake sticker")
+        print("  2) Map sticker")
+        mode = _input_int("Select [1-2]: ", 1, 2)
+
+        if mode == 1:
+            candidate = _step_search()
+            config = _step_configure(candidate)
+            _step_generate(candidate, config)
+        else:
+            from lake_sticker.map.cli import run_map_flow
+            run_map_flow()
 
         if not _input_yes_no("\nGenerate another?", default=False):
             break

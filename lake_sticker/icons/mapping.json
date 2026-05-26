@@ -1,0 +1,22 @@
+{
+  "amenity=place_of_worship": "church",
+  "building=church": "church",
+  "building=cathedral": "church",
+  "building=chapel": "church",
+  "amenity=restaurant": "restaurant",
+  "amenity=fast_food": "restaurant",
+  "amenity=cafe": "restaurant",
+  "amenity=bar": "restaurant",
+  "amenity=pub": "restaurant",
+  "shop=*": "shop",
+  "tourism=hotel": "hotel",
+  "tourism=motel": "hotel",
+  "tourism=guest_house": "hotel",
+  "building=hotel": "hotel",
+  "tourism=museum": "pin",
+  "tourism=attraction": "pin",
+  "historic=*": "pin",
+  "leisure=marina": "boat",
+  "building=*": "house",
+  "natural=tree": "tree"
+}
