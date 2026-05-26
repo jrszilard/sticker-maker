@@ -79,12 +79,22 @@ def main(argv=None) -> int:
         return 0
 
     stickers_dir = out_dir / "stickers"
+    used_stems: dict[Path, set[str]] = {}
     for township in fs_m["townships"]:
         county_dir = stickers_dir / township["county"]
         county_dir.mkdir(parents=True, exist_ok=True)
         svg = render_sticker(township, scale)
-        fname = sanitize_filename(township["name"]) + ".svg"
-        (county_dir / fname).write_text(svg, encoding="utf-8")
+        base_stem = sanitize_filename(township["name"])
+        county_used = used_stems.setdefault(county_dir, set())
+        if base_stem not in county_used:
+            stem = base_stem
+        else:
+            counter = 2
+            while f"{base_stem}_{counter}" in county_used:
+                counter += 1
+            stem = f"{base_stem}_{counter}"
+        county_used.add(stem)
+        (county_dir / f"{stem}.svg").write_text(svg, encoding="utf-8")
 
     logger.info("Wrote %d township stickers", len(fs_m["townships"]))
     return 0

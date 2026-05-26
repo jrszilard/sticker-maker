@@ -58,3 +58,27 @@ def test_main_basemap_only_skips_stickers(tmp_path):
     assert rc == 0
     assert (tmp_path / "nh_basemap.svg").exists()
     assert not (tmp_path / "stickers").exists()
+
+
+def test_main_disambiguates_colliding_sticker_names(tmp_path):
+    # Two subdivisions in the same county with the same name must NOT overwrite.
+    fs_m = {
+        "townships": [
+            {"name": "Unorganized Territory", "county_fp": "007", "county": "Coos",
+             "geometry": _box(0, 0, 1000, 1000)},
+            {"name": "Unorganized Territory", "county_fp": "007", "county": "Coos",
+             "geometry": _box(1000, 0, 2000, 1000)},
+        ],
+        "counties": [
+            {"county_fp": "007", "name": "Coos", "geometry": _box(0, 0, 2000, 1000)},
+        ],
+        "state": _box(0, 0, 2000, 1000),
+    }
+    with patch.object(cli, "_load_feature_set_m", return_value=fs_m):
+        rc = cli.main(["--out-dir", str(tmp_path)])
+    assert rc == 0
+    coos = tmp_path / "stickers" / "Coos"
+    assert (coos / "unorganized_territory.svg").exists()
+    assert (coos / "unorganized_territory_2.svg").exists()
+    # Exactly two distinct files, no silent overwrite.
+    assert len(list(coos.glob("*.svg"))) == 2

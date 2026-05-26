@@ -53,3 +53,20 @@ def test_render_basemap_escapes_ampersand_in_name():
     assert "A &amp; B" in svg
     # Resulting SVG must still parse.
     ET.fromstring(svg)
+
+
+def test_render_basemap_legend_escapes_special_chars():
+    # A tiny town (projected width well below MIN_LABEL_WIDTH) takes the
+    # numbered-legend path; its name must still be XML-escaped there.
+    tiny = {"name": "A < B", "county_fp": "011", "county": "Hillsborough",
+            "geometry": _box(0, 0, 1, 1)}  # 1m wide -> below threshold at small scale
+    fs = {
+        "townships": [tiny],
+        "counties": [{"county_fp": "011", "name": "Hillsborough",
+                      "geometry": _box(0, 0, 1, 1)}],
+        "state": _box(0, 0, 1, 1),
+    }
+    svg = render_basemap(fs, scale=1.0)
+    assert 'id="legend"' in svg
+    assert "A &lt; B" in svg
+    ET.fromstring(svg)  # must still parse
